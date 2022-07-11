@@ -28,13 +28,13 @@ commands:
       - run:
           command: npm run test
           name: Test
-  persist-install:
+  persist-project:
     steps:
       - persist_to_workspace:
           root: .
           paths:
             - .
-  attach-to-install:
+  attach-to-project:
     steps:
       - attach_workspace:
           at: .
@@ -46,22 +46,23 @@ jobs:
     <<: *job-config
     steps:
       - npm-install
-      - persist-install
+      - persist-project
   build:
     <<: *job-config
     steps:
-      - attach-to-install
+      - attach-to-project
       - npm-build
   test:
     <<: *job-config
     steps:
-      - attach-to-install
+      - attach-to-project
       - npm-test
   release:
     <<: *job-config
     steps:
-      - attach-to-install
+      - attach-to-project
       - run: npm run semantic-release
+      - persist-project
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -85,7 +86,7 @@ workflows:
       - test:
           requires: [install]
       
-  new-release-and-deploy:
+  new-release:
     # Creating conditions
     # https://circleci.com/docs/configuration-reference#logic-statements
     # https://support.circleci.com/hc/en-us/articles/360043638052-Conditional-steps-in-jobs-and-conditional-workflows
@@ -97,10 +98,10 @@ workflows:
           type: approval
       - install:
           requires: [to-approve]
-      - build:
-          requires: [install]
-      - test:
-          requires: [install]
+      # - build:
+      #     requires: [install]
+      # - test:
+      #     requires: [install]
       - release:
-          context: org-global
-          requires: [build, test]
+          context: github-auth
+          # requires: [build, test]
