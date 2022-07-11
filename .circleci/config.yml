@@ -136,6 +136,7 @@ workflows:
           requires: [test]
       - build:
           requires: [release, test]
-      - deploy:
-          context: org-global
-          requires: [build]
+      # It worked. No need to explore it further
+      # - deploy:
+      #     context: org-global
+      #     requires: [build]
