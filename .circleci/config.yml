@@ -57,6 +57,11 @@ jobs:
     steps:
       - attach-to-install
       - npm-test
+  release:
+    <<: *job-config
+    steps:
+      - attach-to-install
+      - run: npm run semantic-release
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -69,7 +74,7 @@ workflows:
       or:
         - equal: [main, << pipeline.git.branch >>]
         - equal: [develop, << pipeline.git.branch >>]
-        - equal: [circleci-project-setup, << pipeline.git.branch >>]
+        # - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
       - to-approve:
           type: approval
@@ -85,14 +90,16 @@ workflows:
     # https://circleci.com/docs/configuration-reference#logic-statements
     # https://support.circleci.com/hc/en-us/articles/360043638052-Conditional-steps-in-jobs-and-conditional-workflows
     when:
-      equal: [staging, << pipeline.git.branch >>]
+      # equal: [staging, << pipeline.git.branch >>]
+      equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
-      - install:
+      - to-approve:
           type: approval
+      - install:
+          requires: [to-approve]
       - build:
-          requires:
-            - install
+          requires: [install]
       - test:
-          requires:
-            - install
-      
+          requires: [install]
+      - release:
+          requires: [build, test]
