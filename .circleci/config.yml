@@ -102,4 +102,5 @@ workflows:
       - test:
           requires: [install]
       - release:
+          context: org-global
           requires: [build, test]
