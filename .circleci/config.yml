@@ -30,19 +30,35 @@ commands:
       - run:
           command: npm run test
           name: Test
+  persist-install:
+    steps:
+      - persist_to_workspace:
+          root: .
+          paths:
+            - .
+  attach-to-install:
+    steps:
+      - attach_workspace:
+          at: .
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
+  install:
+    <<: *job-config
+    steps:
+      - npm-install
+      - persist-install
   build:
     <<: *job-config
     steps:
+      - attach-to-install
       - npm-build
   test:
     <<: *job-config
     steps:
+      - attach-to-install
       - npm-test
-      
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -57,8 +73,14 @@ workflows:
         - equal: [develop, << pipeline.git.branch >>]
         - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
-      - build
-      - test
+      - install:
+          type: approval
+      - build:
+          requires:
+            - install
+      - test:
+          requires:
+            - install
       
   new-release-and-deploy:
     # Creating conditions
@@ -67,6 +89,12 @@ workflows:
     when:
       equal: [staging, << pipeline.git.branch >>]
     jobs:
-      - build
-      - test
+      - install:
+          type: approval
+      - build:
+          requires:
+            - install
+      - test:
+          requires:
+            - install
       
