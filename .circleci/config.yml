@@ -138,4 +138,5 @@ workflows:
       - build:
           requires: [release, test]
       - deploy:
+          context: org-global
           requires: [build]
