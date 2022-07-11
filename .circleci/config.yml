@@ -5,6 +5,18 @@ version: 2.1
 orbs:
   node: circleci/node@5.0.2
 
+commands:
+  npm-install:
+    steps:
+      - checkout
+      - node/install-packages
+  npm-build:
+    steps:
+      - npm-install
+      - run:
+          command: npm run build
+          name: Build
+
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
@@ -12,11 +24,7 @@ jobs:
     docker:
       - image: cimg/node:16.15.0
     steps:
-      - checkout
-      - node/install-packages
-      - run:
-          command: npm run build
-          name: Build
+      - npm-build
       
 
 # Invoke jobs via workflows
