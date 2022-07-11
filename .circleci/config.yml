@@ -4,6 +4,7 @@ version: 2.1
 
 orbs:
   node: circleci/node@5.0.2
+  aws-cli: circleci/aws-cli@3.1.1
 
 # Anchors
 # https://circleci.com/docs/introduction-to-yaml-configurations#anchors-and-aliases
@@ -46,6 +47,10 @@ commands:
     steps:
       - attach_workspace:
           at: .
+  attach-to-build:
+    steps:
+      - attach_workspace:
+          at: build
   store-build-artifacts:
     steps:
       - store_artifacts:
@@ -76,6 +81,18 @@ jobs:
       - attach-to-project
       - npm-build
       - store-build-artifacts
+  deploy:
+    docker:
+      - image: 'cimg/python:3.6'
+    steps:
+      - attach-to-build
+      - aws-cli/install
+      - run:
+          name: Sync S3 Bucket
+          command: aws s3 sync $BUILD_FOLDER s3://$BUCKET_NAME --delete
+      - run:
+          name: Invalidate CloudFront Distribuition
+          command: aws cloudfront create-invalidation --distribution-id $DIST_ID --paths '/*'
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -98,6 +115,8 @@ workflows:
           requires: [install]
       - test:
           requires: [install]
+      - deploy:
+          requires: [build, test]
       
   new-release:
     # Creating conditions
@@ -115,6 +134,8 @@ workflows:
           requires: [install]
       - release:
           context: github-auth
-          requires: [install]
+          requires: [test]
       - build:
           requires: [release, test]
+      - deploy:
+          requires: [build]
