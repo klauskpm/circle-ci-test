@@ -5,6 +5,8 @@ version: 2.1
 orbs:
   node: circleci/node@5.0.2
 
+# Anchors
+# https://circleci.com/docs/introduction-to-yaml-configurations#anchors-and-aliases
 job-config: &job-config
   docker:
       - image: cimg/node:16.15.0
@@ -22,6 +24,12 @@ commands:
       - run:
           command: npm run build
           name: Build
+  npm-test:
+    steps:
+      - npm-install
+      - run:
+          command: npm run test
+          name: Test
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
@@ -30,6 +38,10 @@ jobs:
     <<: *job-config
     steps:
       - npm-build
+  test:
+    <<: *job-config
+    steps:
+      - npm-test
       
 
 # Invoke jobs via workflows
@@ -46,9 +58,8 @@ workflows:
         - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
       - build
-      - node/run:
-          version: '16.15.0'
-          npm-run: build 
+      - test
+      
   new-release-and-deploy:
     # Creating conditions
     # https://circleci.com/docs/configuration-reference#logic-statements
@@ -57,7 +68,5 @@ workflows:
       equal: [staging, << pipeline.git.branch >>]
     jobs:
       - build
-      - node/run:
-          version: '16.15.0'
-          npm-run: build 
-          type: approval
+      - test
+      
