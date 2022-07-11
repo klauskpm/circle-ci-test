@@ -15,13 +15,30 @@ jobs:
     steps:
       - checkout
       - node/install-packages
+      - run: npm run build
       
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
+  default-workflow:
+    when: 
+      or:
+        - equal: [main, << pipeline.git.branch >>]
+        - equal: [develop, << pipeline.git.branch >>]
+        - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
       - example-job
       - node/run:
+          version: '16.15.0'
           npm-run: build 
+          type: approval
+  release-workflow:
+    when:
+      equal: [staging, << pipeline.git.branch >>]
+    jobs:
+      - example-job
+      - node/run:
+          version: '16.15.0'
+          npm-run: build 
+          type: approval
