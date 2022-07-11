@@ -20,13 +20,11 @@ commands:
       - node/install-packages
   npm-build:
     steps:
-      - npm-install
       - run:
           command: npm run build
           name: Build
   npm-test:
     steps:
-      - npm-install
       - run:
           command: npm run test
           name: Test
@@ -73,14 +71,14 @@ workflows:
         - equal: [develop, << pipeline.git.branch >>]
         - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
-      - install:
+      - to-approve:
           type: approval
+      - install:
+          requires: [to-approve]
       - build:
-          requires:
-            - install
+          requires: [install]
       - test:
-          requires:
-            - install
+          requires: [install]
       
   new-release-and-deploy:
     # Creating conditions
