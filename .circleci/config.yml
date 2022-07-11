@@ -13,9 +13,7 @@ jobs:
       - image: cimg/node:16.15.0
     steps:
       - checkout
-      - node/install-packages:
-          cache-path: ~/node_modules
-          check-cache: "always"
+      - node/install-packages
       - run:
           command: npm run build
           name: Build
