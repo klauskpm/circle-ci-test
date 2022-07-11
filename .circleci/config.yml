@@ -34,10 +34,22 @@ commands:
           root: .
           paths:
             - .
+  persist-release:
+    steps:
+      - persist_to_workspace:
+          root: .
+          paths:
+            - CHANGELOG.md
+            - package.json
+            - package-lock.json
   attach-to-project:
     steps:
       - attach_workspace:
           at: .
+  store-build-artifacts:
+    steps:
+      - store_artifacts:
+          path: build
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
@@ -47,11 +59,6 @@ jobs:
     steps:
       - npm-install
       - persist-project
-  build:
-    <<: *job-config
-    steps:
-      - attach-to-project
-      - npm-build
   test:
     <<: *job-config
     steps:
@@ -62,7 +69,13 @@ jobs:
     steps:
       - attach-to-project
       - run: npm run semantic-release
-      - persist-project
+      - persist-release
+  build:
+    <<: *job-config
+    steps:
+      - attach-to-project
+      - npm-build
+      - store-build-artifacts
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
@@ -98,11 +111,10 @@ workflows:
           type: approval
       - install:
           requires: [to-approve]
-      # - build:
-      #     requires: [install]
-      # - test:
-      #     requires: [install]
+      - test:
+          requires: [install]
       - release:
           context: github-auth
           requires: [install]
-          # requires: [build, test]
+      - build:
+          requires: [release, test]
