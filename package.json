@@ -1,11 +1,11 @@
 {
   "name": "circle-ci-test",
-  "version": "1.0.0",
+  "version": "0.0.0-development",
   "description": "",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/klauskpm/circle-ci-test.git"
+    "url": "https://github.com/klauskpm/circle-ci-test.git"
   },
   "author": "",
   "license": "ISC",
@@ -23,7 +23,8 @@
     "build-storybook": "build-storybook",
     "test-storybook": "test-storybook",
     "init-msw": "msw init public/",
-    "chromatic": "npx chromatic --project-token=1329254678ed"
+    "chromatic": "npx chromatic --project-token=1329254678ed",
+    "semantic-release": "semantic-release"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.8.2",
@@ -65,6 +66,9 @@
     ]
   },
   "devDependencies": {
+    "@semantic-release/changelog": "^6.0.1",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^8.0.5",
     "@storybook/addon-a11y": "^6.5.9",
     "@storybook/addon-actions": "^6.5.7",
     "@storybook/addon-essentials": "^6.5.7",
@@ -79,13 +83,18 @@
     "@storybook/test-runner": "^0.3.0",
     "@storybook/testing-library": "^0.0.11",
     "babel-plugin-named-exports-order": "^0.0.2",
+    "conventional-changelog-conventionalcommits": "^4.5.0",
     "chromatic": "^6.6.4",
     "msw": "^0.42.0",
     "msw-storybook-addon": "^1.6.3",
     "prop-types": "^15.8.1",
+    "semantic-release": "^19.0.3",
     "webpack": "^5.73.0"
   },
   "msw": {
     "workerDirectory": "public"
+  },
+  "publishConfig": {
+    "access": "restricted"
   }
 }
