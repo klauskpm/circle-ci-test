@@ -104,4 +104,5 @@ workflows:
       #     requires: [install]
       - release:
           context: github-auth
+          requires: [install]
           # requires: [build, test]
