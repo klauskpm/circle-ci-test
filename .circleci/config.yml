@@ -8,14 +8,17 @@ orbs:
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
 jobs:
-  example-job:
+  build:
     docker:
-      # replace with your preferred image
       - image: cimg/node:16.15.0
     steps:
       - checkout
-      - node/install-packages
-      - run: npm run build
+      - node/install-packages:
+          cache-path: ~/node_modules
+          check-cache: "always"
+      - run:
+          command: npm run build
+          name: Build
       
 
 # Invoke jobs via workflows
@@ -28,7 +31,7 @@ workflows:
         - equal: [develop, << pipeline.git.branch >>]
         - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
-      - example-job
+      - build
       - node/run:
           version: '16.15.0'
           npm-run: build 
@@ -36,7 +39,7 @@ workflows:
     when:
       equal: [staging, << pipeline.git.branch >>]
     jobs:
-      - example-job
+      - build
       - node/run:
           version: '16.15.0'
           npm-run: build 
