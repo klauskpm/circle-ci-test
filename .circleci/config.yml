@@ -93,9 +93,22 @@ jobs:
       #     name: Invalidate CloudFront Distribuition
       #     command: aws cloudfront create-invalidation --distribution-id $DIST_ID --paths '/*'
 
+  dev:
+    <<: *job-config
+    environment:
+      REACT_APP_NODE_ENV: 'sandbox'
+    steps:
+      - run: echo "here it is':' $REACT_APP_NODE_ENV"
+
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
+  environment-variables-test:
+    when:
+      equal: [circleci-project-setup, << pipeline.git.branch >>]
+    jobs:
+      - dev
+
   deploy:
     # Creating conditions
     # https://circleci.com/docs/configuration-reference#logic-statements
@@ -104,7 +117,6 @@ workflows:
       or:
         - equal: [main, << pipeline.git.branch >>]
         - equal: [develop, << pipeline.git.branch >>]
-        # - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
       - to-approve:
           type: approval
@@ -122,8 +134,7 @@ workflows:
     # https://circleci.com/docs/configuration-reference#logic-statements
     # https://support.circleci.com/hc/en-us/articles/360043638052-Conditional-steps-in-jobs-and-conditional-workflows
     when:
-      # equal: [staging, << pipeline.git.branch >>]
-      equal: [circleci-project-setup, << pipeline.git.branch >>]
+      equal: [staging, << pipeline.git.branch >>]
     jobs:
       - to-approve:
           type: approval
