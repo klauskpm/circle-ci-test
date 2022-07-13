@@ -6,12 +6,6 @@ orbs:
   node: circleci/node@5.0.2
   aws-cli: circleci/aws-cli@3.1.1
 
-# Anchors
-# https://circleci.com/docs/introduction-to-yaml-configurations#anchors-and-aliases
-job-config: &job-config
-  docker:
-      - image: cimg/node:16.15.0
-
 # Creating reusable commands
 # https://circleci.com/docs/reusing-config#authoring-reusable-commands
 commands:
@@ -56,88 +50,69 @@ commands:
 
 # Define a job to be invoked later in a workflow.
 # See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+
+node-job-config: &node-job-config
+  docker:
+      - image: cimg/node:16.15.0
+
 jobs:
   install:
-    <<: *job-config
+    <<: *node-job-config
     steps:
       - npm-install
       - persist-project
   test:
-    <<: *job-config
+    <<: *node-job-config
     steps:
       - attach-to-project
       - npm-test
   release:
-    <<: *job-config
+    <<: *node-job-config
     steps:
       - attach-to-project
       - run: npm run semantic-release
       - persist-release
-  build:
-    <<: *job-config
+  build: &build
+    <<: *node-job-config
+    environment:
+      REACT_APP_NODE_ENV: 'example env'
     steps:
       - attach-to-project
+      - run:
+          name: Show environment variables
+          command: |
+              echo "react app env: $REACT_APP_NODE_ENV"
       - npm-build
       - persist-build
-  deploy:
+  deploy: &deploy
     docker:
       - image: 'cimg/python:3.6'
     steps:
       - attach-to-project
       - aws-cli/install
-      - run:
-          name: Sync S3 Bucket
-          command: aws s3 sync build/ s3://$BUCKET_NAME --delete
+      - run: ls -la
+      # - run:
+      #     name: Sync S3 Bucket
+      #     command: aws s3 sync build/ s3://$BUCKET_NAME --delete
       # Useless for now
       # - run:
       #     name: Invalidate CloudFront Distribuition
       #     command: aws cloudfront create-invalidation --distribution-id $DIST_ID --paths '/*'
 
-  dev:
-    <<: *job-config
-    environment:
-      REACT_APP_NODE_ENV: 'sandbox'
-    steps:
-      - run:
-          name: Show environment variables
-          command: |
-              echo "react app env: $REACT_APP_NODE_ENV"
-  staging:
-    <<: *job-config
-    environment:
-      REACT_APP_NODE_ENV: 'staging'
-    steps:
-      - run:
-          name: Show environment variables
-          command: |
-              echo "react app env: $REACT_APP_NODE_ENV"
-  prod:
-    <<: *job-config
-    environment:
-      REACT_APP_NODE_ENV: 'prod'
-    steps:
-      - run:
-          name: Show environment variables
-          command: |
-              echo "react app env: $REACT_APP_NODE_ENV"
+  sandbox-build:
+    <<: *build
+  sandbox-deploy:
+    <<: *deploy
 
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
-workflows:
-  environment-variables-test:
-    when:
-      equal: [circleci-project-setup, << pipeline.git.branch >>]
-    jobs:
-      - dev
-      - staging:
-          filters:
-            branches:
-              only: [staging]
-      - prod:
-          filters:
-            branches:
-              only: [main]
 
+only-sandbox: &only-sandbox
+  filters:
+    branches:
+      only: circleci-project-setup
+
+workflows:
   deploy:
     # Creating conditions
     # https://circleci.com/docs/configuration-reference#logic-statements
@@ -146,17 +121,29 @@ workflows:
       or:
         - equal: [main, << pipeline.git.branch >>]
         - equal: [develop, << pipeline.git.branch >>]
+        - equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
       - to-approve:
           type: approval
       - install:
           requires: [to-approve]
       - build:
+          filters:
+            branches:
+              ignore: circleci-project-setup
           requires: [install]
+
+      - sandbox-build:
+          <<: *only-sandbox
+          requires: [install]
+
       - test:
           requires: [install]
       - deploy:
           requires: [build, test]
+
+      - sandbox-deploy:
+          requires: [sandbox-build, test]
       
   new-release:
     # Creating conditions
@@ -175,8 +162,7 @@ workflows:
           context: github-auth
           requires: [test]
       - build:
-          requires: [release, test]
+          requires: [release]
       # It worked. No need to explore it further
       # - deploy:
-      #     context: org-global
       #     requires: [build]
