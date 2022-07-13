@@ -104,6 +104,16 @@ jobs:
   sandbox-deploy:
     <<: *deploy
 
+  staging-build:
+    <<: *build
+  staging-deploy:
+    <<: *deploy
+
+  prod-build:
+    <<: *build
+  prod-deploy:
+    <<: *deploy
+
 # Invoke jobs via workflows
 # See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 
@@ -111,9 +121,19 @@ only-sandbox: &only-sandbox
   filters:
     branches:
       only: circleci-project-setup
+      
+only-staging: &only-staging
+  filters:
+    branches:
+      only: staging
+
+only-prod: &only-prod
+  filters:
+    branches:
+      only: main
 
 workflows:
-  deploy:
+  wt-eq:
     # Creating conditions
     # https://circleci.com/docs/configuration-reference#logic-statements
     # https://support.circleci.com/hc/en-us/articles/360043638052-Conditional-steps-in-jobs-and-conditional-workflows
@@ -127,23 +147,22 @@ workflows:
           type: approval
       - install:
           requires: [to-approve]
-      - build:
-          filters:
-            branches:
-              ignore: circleci-project-setup
+      - test:
           requires: [install]
 
       - sandbox-build:
           <<: *only-sandbox
           requires: [install]
-
-      - test:
-          requires: [install]
-      - deploy:
-          requires: [build, test]
-
       - sandbox-deploy:
+          <<: *only-sandbox
           requires: [sandbox-build, test]
+
+      - prod-build:
+          <<: *only-prod
+          requires: [install]
+      - prod-deploy:
+          <<: *only-prod
+          requires: [prod-build, test]
       
   new-release:
     # Creating conditions
@@ -161,8 +180,7 @@ workflows:
       - release:
           context: github-auth
           requires: [test]
-      - build:
+      - staging-build:
           requires: [release]
-      # It worked. No need to explore it further
-      # - deploy:
-      #     requires: [build]
+      - staging-deploy:
+          requires: [staging-build]
