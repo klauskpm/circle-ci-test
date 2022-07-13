@@ -111,10 +111,10 @@ jobs:
           name: Show environment variables
           command: |
               echo "react app env: $REACT_APP_NODE_ENV"
-  main:
+  prod:
     <<: *job-config
     environment:
-      REACT_APP_NODE_ENV: 'main'
+      REACT_APP_NODE_ENV: 'prod'
     steps:
       - run:
           name: Show environment variables
@@ -129,8 +129,14 @@ workflows:
       equal: [circleci-project-setup, << pipeline.git.branch >>]
     jobs:
       - dev
-      - staging
-      - main
+      - staging:
+          filters:
+            branches:
+              only: [staging]
+      - prod:
+          filters:
+            branches:
+              only: [main]
 
   deploy:
     # Creating conditions
